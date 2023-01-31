@@ -1,0 +1,377 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique @map("email")
+  password    String    @map("password")
+  phoneNumber String    @map("phone_number")
+  firstName   String    @map("first_name")
+  lastName    String    @map("last_name")
+  googleId    String    @map("google_id")
+  image       Image[]
+  Order       Order[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+  obsolete    Boolean   @default(false)
+
+  @@map("users")
+}
+
+model Address {
+  id            Int       @id @default(autoincrement())
+  city          City      @relation(fields: [cityId], references: [id])
+  cityId        Int       @map("city_id")
+  zipCode       String    @map("zip_code")
+  addressLine1  String    @map("address_line_1")
+  addressLine2  String?   @map("address_line_2")
+  contactNumber String    @map("contact_number")
+  contactEmail  String    @map("contact_email")
+  order         Order[]
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+  obsolete      Boolean   @default(false)
+
+  @@map("address")
+}
+
+model Category {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  description         String
+  weight              Int
+  categoryProducts    CategoryProduct[]
+  categoryTranslation CategoryTranslation[]
+  image               Image[]
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime?             @updatedAt @map("updated_at")
+  obsolete            Boolean               @default(false)
+
+  @@index([name])
+  @@map("category")
+}
+
+model CategoryTranslation {
+  id          Int       @id @default(autoincrement())
+  name        String    @map("name")
+  description String    @map("description")
+  language    Language  @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  languageId  Int       @map("language_id")
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  categoryId  Int       @map("category_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+  obsolete    Boolean   @default(false)
+
+  @@index([name, description])
+  @@map("category_translation")
+}
+
+model CategoryProduct {
+  id         Int       @id @default(autoincrement())
+  category   Category  @relation(fields: [categoryId], references: [id])
+  product    Product   @relation(fields: [productId], references: [id])
+  categoryId Int       @map("category_id")
+  productId  Int       @map("product_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+  obsolete   Boolean   @default(false)
+
+  @@map("category_product")
+}
+
+model Tax {
+  id         Int    @id @default(autoincrement())
+  class      String
+  percentage Float
+
+  product   Product[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  obsolete  Boolean   @default(false)
+}
+
+model Product {
+  id                 Int                  @id @default(autoincrement())
+  name               String               @map("name")
+  description        String               @map("description")
+  length             Float
+  height             Float
+  width              Float
+  weight             Int                  @map("weight")
+  basePrice          Float                @map("base_price")
+  isBox              Boolean              @map("is_box")
+  stock              Int
+  categoryProducts   CategoryProduct[]
+  ProductTranslation ProductTranslation[]
+  image              Image[]
+  tax                Tax                  @relation(fields: [taxId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  taxId              Int
+  orderProduct       OrderProduct[]       @relation("order_product_FK")
+  orderBox           OrderProduct[]       @relation("order_box")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime?            @updatedAt @map("updated_at")
+  obsolete           Boolean              @default(false)
+
+  @@index([name, description])
+  @@map("product")
+}
+
+model ProductTranslation {
+  id          Int       @id @default(autoincrement())
+  name        String    @map("name")
+  description String    @map("description")
+  language    Language  @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  languageId  Int       @map("language_id")
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productId   Int       @map("product_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+  obsolete    Boolean   @default(false)
+
+  @@index([name])
+  @@map("product_translation")
+}
+
+model Language {
+  id                        Int                         @id @default(autoincrement())
+  name                      String                      @map("name")
+  code                      String                      @map("code") @db.VarChar(2)
+  categoryTranslation       CategoryTranslation[]
+  productTranslation        ProductTranslation[]
+  ModifierTranslation       ModifierTranslation[]
+  modifierChoiceTranslation ModifierChoiceTranslation[]
+  createdAt                 DateTime                    @default(now()) @map("created_at")
+  updatedAt                 DateTime?                   @updatedAt @map("updated_at")
+  obsolete                  Boolean                     @default(false)
+
+  @@index([name, code])
+  @@map("language")
+}
+
+model Currency {
+  id             Int       @id @default(autoincrement())
+  name           String    @map("name")
+  code           String    @map("code") @db.VarChar(3)
+  conversionRate Float     @map("conversion_rate")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+  obsolete       Boolean   @default(false)
+
+  @@index([name, code])
+  @@map("currency")
+}
+
+model Country {
+  id        Int       @id @default(autoincrement())
+  name      String    @map("name")
+  code      String    @map("code") @db.VarChar(2)
+  city      City[]
+  state     State[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  obsolete  Boolean   @default(false)
+
+  @@index([name, code])
+  @@map("country")
+}
+
+model City {
+  id        Int       @id @default(autoincrement())
+  name      String    @map("name")
+  country   Country   @relation(fields: [countryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  countryId Int       @map("country_id")
+  stateId   Int       @map("state_id")
+  state     State     @relation(fields: [stateId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Address   Address[]
+  ZipCodes  ZipCode[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  obsolete  Boolean   @default(false)
+
+  @@index([name])
+  @@map("city")
+}
+
+model ZipCode {
+  id          Int       @id @default(autoincrement())
+  lowZipCode  String    @map("low_zip_code")
+  highZipCode String    @map("high_zip_code")
+  city        City      @relation(fields: [cityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cityId      Int
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+  obsolete    Boolean   @default(false)
+
+  @@index([lowZipCode, highZipCode])
+  @@map("zip_code")
+}
+
+model State {
+  id        Int       @id @default(autoincrement())
+  name      String    @map("name")
+  code      String    @db.VarChar(2)
+  country   Country   @relation(fields: [countryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  countryId Int       @map("country_id")
+  city      City[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  obsolete  Boolean   @default(false)
+
+  @@index([name, code])
+  @@map("state")
+}
+
+model Image {
+  id         Int       @id @default(autoincrement())
+  productId  Int?      @map("product_id")
+  categoryId Int?      @map("category_id")
+  product    Product?  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId     Int?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+  obsolete   Boolean   @default(false)
+
+  @@map("image")
+}
+
+model Modifier {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  required            Boolean
+  count               Int                   @default(1)
+  modifierTranslation ModifierTranslation[]
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime?             @updatedAt @map("updated_at")
+  obsolete            Boolean               @default(false)
+
+  @@map("modifier")
+}
+
+model ModifierChoice {
+  id                        Int                         @id @default(autoincrement())
+  name                      String
+  increase                  Float                       @default(0)
+  ModifierChoiceTranslation ModifierChoiceTranslation[]
+  OrderModifier             OrderModifier[]
+  createdAt                 DateTime                    @default(now()) @map("created_at")
+  updatedAt                 DateTime?                   @updatedAt @map("updated_at")
+  obsolete                  Boolean                     @default(false)
+
+  @@map("modifier_choice")
+}
+
+model ModifierTranslation {
+  id         Int       @id @default(autoincrement())
+  modifier   Modifier  @relation(fields: [modifierId], references: [id])
+  modifierId Int       @map("modifier_id")
+  language   Language  @relation(fields: [languageId], references: [id])
+  languageId Int       @map("language_id")
+  name       String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+  obsolete   Boolean   @default(false)
+
+  @@map("modifier_translation")
+}
+
+model ModifierChoiceTranslation {
+  id               Int            @id @default(autoincrement())
+  modifier         ModifierChoice @relation(fields: [modifierChoiceId], references: [id])
+  modifierChoiceId Int            @map("modifier_choice_id")
+  language         Language       @relation(fields: [languageId], references: [id])
+  languageId       Int            @map("language_id")
+  name             String
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime?      @updatedAt @map("updated_at")
+  obsolete         Boolean        @default(false)
+
+  @@map("modifier_choice_translation")
+}
+
+model Order {
+  id             Int            @id @default(autoincrement())
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId         Int            @map("user_id")
+  address        Address        @relation(fields: [addressId], references: [id])
+  addressId      Int            @map("address_id")
+  orderNotes     String?        @map("order_notes")
+  subtotal       Float?
+  total          Float?
+  trackingNumber String
+  OrderProduct   OrderProduct[]
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime?      @updatedAt @map("updated_at")
+  obsolete       Boolean        @default(false)
+
+  @@map("order")
+}
+
+model OrderProduct {
+  id            Int             @id @default(autoincrement())
+  product       Product         @relation(fields: [productId], references: [id], name: "order_product_FK")
+  productId     Int             @map("product_id")
+  order         Order           @relation(fields: [orderId], references: [id])
+  orderId       Int             @map("order_id")
+  quantity      Int             @default(1)
+  total         Float?
+  subtotal      Float?
+  orderModifier OrderModifier[]
+  box           Product?        @relation(fields: [boxId], references: [id], name: "order_box")
+  boxId         Int?
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime?       @updatedAt @map("updated_at")
+  obsolete      Boolean         @default(false)
+
+  @@map("order_product")
+}
+
+model OrderModifier {
+  id               Int            @id @default(autoincrement())
+  orderProduct     OrderProduct   @relation(fields: [orderProductId], references: [id])
+  orderProductId   Int            @map("order_product_id")
+  modifier         ModifierChoice @relation(fields: [modifierChoiceId], references: [id])
+  modifierChoiceId Int            @map("modifier_choice_id")
+  quantity         Int            @default(1)
+  total            Float?
+  subtotal         Float?
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime?      @updatedAt @map("updated_at")
+  obsolete         Boolean        @default(false)
+
+  @@map("order_modifier")
+}
+
+model QuoteRequest {
+  id              Int       @id @default(autoincrement())
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
+  email           String    @map("email")
+  phoneNumber     String    @map("phone_number")
+  companyName     String    @map("company_name")
+  boxQuantity     Int       @map("box_quantity")
+  industry        String    @map("industry")
+  useCase         String    @map("use_case")
+  shippingDate    DateTime  @map("shipping_date")
+  leadSouerce     String    @map("lead_source")
+  internalGifting String    @map("internal_gifting")
+  externalGifting String    @map("external_gifting")
+  international   Boolean   @map("international")
+  workedWithUs    Boolean   @map("worked_with_us")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime? @updatedAt @map("updated_at")
+  obsolete        Boolean   @default(false)
+
+  @@map("quote_request")
+}
