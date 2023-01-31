@@ -10,26 +10,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Roles {
+  ADMIN
+  END
+}
+
+model UserRole {
+  id     Int   @id @default(autoincrement())
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId Int
+  role   Roles
+  @@map("user_role")
+}
+
 model User {
-  id          Int       @id @default(autoincrement())
-  email       String    @unique @map("email")
-  password    String    @map("password")
-  phoneNumber String    @map("phone_number")
-  firstName   String    @map("first_name")
-  lastName    String    @map("last_name")
-  googleId    String    @map("google_id")
+  id          Int         @id @default(autoincrement())
+  email       String      @unique @map("email")
+  password    String      @map("password")
+  phoneNumber String      @map("phone_number")
+  firstName   String      @map("first_name")
+  lastName    String      @map("last_name")
+  googleId    String      @map("google_id")
   image       Image[]
-  Order       Order[]
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime? @updatedAt @map("updated_at")
-  obsolete    Boolean   @default(false)
+  order       Order[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime?   @updatedAt @map("updated_at")
+  obsolete    Boolean     @default(false)
+  userRoles   UserRole[]
 
   @@map("users")
 }
 
 model Address {
   id            Int       @id @default(autoincrement())
-  city          City      @relation(fields: [cityId], references: [id])
+  city          City      @relation(fields: [cityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   cityId        Int       @map("city_id")
   zipCode       String    @map("zip_code")
   addressLine1  String    @map("address_line_1")
@@ -78,8 +92,8 @@ model CategoryTranslation {
 
 model CategoryProduct {
   id         Int       @id @default(autoincrement())
-  category   Category  @relation(fields: [categoryId], references: [id])
-  product    Product   @relation(fields: [productId], references: [id])
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   categoryId Int       @map("category_id")
   productId  Int       @map("product_id")
   createdAt  DateTime  @default(now()) @map("created_at")
@@ -112,7 +126,7 @@ model Product {
   isBox              Boolean              @map("is_box")
   stock              Int
   categoryProducts   CategoryProduct[]
-  ProductTranslation ProductTranslation[]
+  productTranslation ProductTranslation[]
   image              Image[]
   tax                Tax                  @relation(fields: [taxId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   taxId              Int
@@ -148,7 +162,7 @@ model Language {
   code                      String                      @map("code") @db.VarChar(2)
   categoryTranslation       CategoryTranslation[]
   productTranslation        ProductTranslation[]
-  ModifierTranslation       ModifierTranslation[]
+  modifierTranslation       ModifierTranslation[]
   modifierChoiceTranslation ModifierChoiceTranslation[]
   createdAt                 DateTime                    @default(now()) @map("created_at")
   updatedAt                 DateTime?                   @updatedAt @map("updated_at")
@@ -192,8 +206,8 @@ model City {
   countryId Int       @map("country_id")
   stateId   Int       @map("state_id")
   state     State     @relation(fields: [stateId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  Address   Address[]
-  ZipCodes  ZipCode[]
+  address   Address[]
+  zipCodes  ZipCode[]
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
   obsolete  Boolean   @default(false)
@@ -263,8 +277,8 @@ model ModifierChoice {
   id                        Int                         @id @default(autoincrement())
   name                      String
   increase                  Float                       @default(0)
-  ModifierChoiceTranslation ModifierChoiceTranslation[]
-  OrderModifier             OrderModifier[]
+  modifierChoiceTranslation ModifierChoiceTranslation[]
+  orderModifier             OrderModifier[]
   createdAt                 DateTime                    @default(now()) @map("created_at")
   updatedAt                 DateTime?                   @updatedAt @map("updated_at")
   obsolete                  Boolean                     @default(false)
@@ -274,9 +288,9 @@ model ModifierChoice {
 
 model ModifierTranslation {
   id         Int       @id @default(autoincrement())
-  modifier   Modifier  @relation(fields: [modifierId], references: [id])
+  modifier   Modifier  @relation(fields: [modifierId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   modifierId Int       @map("modifier_id")
-  language   Language  @relation(fields: [languageId], references: [id])
+  language   Language  @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   languageId Int       @map("language_id")
   name       String
   createdAt  DateTime  @default(now()) @map("created_at")
@@ -288,9 +302,9 @@ model ModifierTranslation {
 
 model ModifierChoiceTranslation {
   id               Int            @id @default(autoincrement())
-  modifier         ModifierChoice @relation(fields: [modifierChoiceId], references: [id])
+  modifier         ModifierChoice @relation(fields: [modifierChoiceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   modifierChoiceId Int            @map("modifier_choice_id")
-  language         Language       @relation(fields: [languageId], references: [id])
+  language         Language       @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   languageId       Int            @map("language_id")
   name             String
   createdAt        DateTime       @default(now()) @map("created_at")
@@ -304,13 +318,13 @@ model Order {
   id             Int            @id @default(autoincrement())
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId         Int            @map("user_id")
-  address        Address        @relation(fields: [addressId], references: [id])
+  address        Address        @relation(fields: [addressId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   addressId      Int            @map("address_id")
   orderNotes     String?        @map("order_notes")
   subtotal       Float?
   total          Float?
   trackingNumber String
-  OrderProduct   OrderProduct[]
+  orderProduct   OrderProduct[]
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime?      @updatedAt @map("updated_at")
   obsolete       Boolean        @default(false)
@@ -322,7 +336,7 @@ model OrderProduct {
   id            Int             @id @default(autoincrement())
   product       Product         @relation(fields: [productId], references: [id], name: "order_product_FK")
   productId     Int             @map("product_id")
-  order         Order           @relation(fields: [orderId], references: [id])
+  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   orderId       Int             @map("order_id")
   quantity      Int             @default(1)
   total         Float?
@@ -339,9 +353,9 @@ model OrderProduct {
 
 model OrderModifier {
   id               Int            @id @default(autoincrement())
-  orderProduct     OrderProduct   @relation(fields: [orderProductId], references: [id])
+  orderProduct     OrderProduct   @relation(fields: [orderProductId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   orderProductId   Int            @map("order_product_id")
-  modifier         ModifierChoice @relation(fields: [modifierChoiceId], references: [id])
+  modifier         ModifierChoice @relation(fields: [modifierChoiceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   modifierChoiceId Int            @map("modifier_choice_id")
   quantity         Int            @default(1)
   total            Float?
